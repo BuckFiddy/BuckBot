@@ -4,6 +4,7 @@ require('prototype.spawn');
 require('prototype.room');
 
 module.exports.loop = function () {
+    // TESTING GITHUB>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<
 
     // Clear memory of unused names
     for (let name in Memory.creeps) {
