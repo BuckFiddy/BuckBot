@@ -12,40 +12,64 @@ var roleList = [
 StructureSpawn.prototype.spawnCreepWhenNeeded = function () {
     let room = this.room;
     let creepsInRoom = room.find(FIND_MY_CREEPS);
-    let transportersNeeded = room.find(FIND_SOURCES).length + 1;
-    let maxConstructors = room.memory.availableMiningPositions;
+    let maxEnergy = room.energyCapacityAvailable;
+    let numSources = room.find(FIND_SOURCES).length;
+    let containers = room.find(FIND_STRUCTURES, { filter: (s) => (s.structureType == STRUCTURE_CONTAINER)});
+    let name = undefined;
+    let minEnergyForHarvester = 550;
     let totalCreeps = {};
+
     let minCreeps = {
-        'transporter': transportersNeeded,
-        'repairer': 3,
-        'builder': 1,
-        'upgrader': 1
+        'transporter': numSources + 1,
+        'repairer': room.controller.level,
+        'builder': 0,
+        'upgrader': 0
     };
+
     // Set distant rooms to mine from here:
     let minDistanceHarvesters = {
 
     };
 
+    // These are for when shit hits the fan. Constructor is a jack of all trades creep to either start a room or to save one from a wipe
+    // minEnergyForTransporter is for a CARRY, CARRY, MOVE creep
+    // minEnergyForConstructor is for a WORK, CARRY, MOVE creep with a little margin for error
+    let minEnergyForTransporter = 150;
+    let minEnergyForConstructor = 225;
+    
     for (let role of roleList) {
         totalCreeps[role] = _.sum(creepsInRoom, (c) => c.memory.role == role);
     }
 
-    let maxEnergy = room.energyCapacityAvailable;
-    let name = undefined;
-
-    // These are for when shit hits the fan. Constructor is a jack of all trades creep to either start a room or to save one from a wipe
-    // minEnergyForTransporter is for a WORK, WORK, MOVE creep
-    // minEnergyForConstructor is for a WORK, CARRY, MOVE creep with a little margin for error
-    let minEnergyForTransporter = 150;
-    let minEnergyForConstructor = 225;
-
     // Check transporter count to ensure colony survival
+    if (totalCreeps['constructor'] < room.memory.availableMiningPositions){
+        if (totalCreeps['harvester'] > 0 && totalCreeps['transporter'] == 0){
+            name = this.createTransporter(maxEnergy);
+        }
+        else if (totalCreeps['harvester'] < numSources && containers.length > 0) {
+            let sources = room.find(FIND_SOURCES);
+            for (let source of sources) {
+                if (!_.some(creepsInRoom, (c) => c.memory.role == 'harvester' && c.memory.sourceId == source.id)) {
+                    let containers = source.pos.findInRange(FIND_STRUCTURES, 1, { filter: (s) => s.structureType == STRUCTURE_CONTAINER });
+                    if (containers.length > 0) {
+                        name = this.createHarvester(source.id);
+                        break;
+                    }
+                }
+            }
+        }
+        else {
+            name = this.createCustomCreep(room.energyAvailable, 'constructor');
+        }
+    }
+
+    /*
     if (room.controller.level == 1 || room.energyAvailable <= minEnergyForConstructor) {
         if ((totalCreeps['harvester'] > 0) && (totalCreeps['transporter'] == 0) && (room.energyAvailable >= minEnergyForTransporter)) {
             name = this.createTransporter(minEnergyForTransporter);
         }
         else {
-            if (totalCreeps['constructor'] <= maxConstructors){
+            if (totalCreeps['constructor'] <= room.memory.availableMiningPositions){
                 name = this.createCustomCreep(room.energyAvailable, 'constructor');                
             }
         }
@@ -65,9 +89,10 @@ StructureSpawn.prototype.spawnCreepWhenNeeded = function () {
             name = this.createTransporter(minEnergyForTransporter);
         }
     }
+    */
 
     // If a creep hasn't been spawned check remaining roles
-    if (name == undefined) {
+    if (name == undefined && containers.length > 0) {
         for (let role of roleList) {
             /*
             // check for claim order
@@ -115,7 +140,7 @@ StructureSpawn.prototype.spawnCreepWhenNeeded = function () {
         for (let roomName in numberOfDistanceHarvesters) {
             console.log("distanceHarvester" + roomName + ": " + numberOfDistanceHarvesters[roomName]);
         }
-        console.log("MaxConstructors: " + maxConstructors);
+        console.log("MaxConstructors: " + room.memory.availableMiningPositions);
         console.log("===================================");
     }
 };

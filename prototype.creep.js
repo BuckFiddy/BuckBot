@@ -14,7 +14,7 @@ Creep.prototype.runRole = function () {
 };
 
 Creep.prototype.getEnergy = function (useContainer, useSource, isUpgrader) {
-    let container;
+    let container = this.pos.findClosestByPath(FIND_STRUCTURES, { filter: (s) => (s.structureType == STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] > this.carryCapacity)});
 
     if (isUpgrader){
         container = this.room.storage;
@@ -33,16 +33,12 @@ Creep.prototype.getEnergy = function (useContainer, useSource, isUpgrader) {
             }
         }
     }
-    else if (useContainer) {
-        container = this.pos.findClosestByPath(FIND_STRUCTURES, { filter: (s) => (s.structureType == STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] > this.carryCapacity)});
-
-        if (container) {
-            if (this.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                this.moveTo(container);
-            }
+    else if (useContainer && container != undefined) {
+        if (this.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+            this.moveTo(container);
         }
     }
-    else if (useSource) {
+    else {
         var source = this.pos.findClosestByPath(FIND_SOURCES_ACTIVE);
 
         if (this.harvest(source) == ERR_NOT_IN_RANGE) {
@@ -70,6 +66,9 @@ Creep.prototype.depositEnergy = function (useContainer) {
             }
         }
         else {
+            if (storageStructure == undefined){
+                storageStructure = this.room.storage;
+            }
             if (storageStructure) {
                 if (this.transfer(storageStructure, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                     this.moveTo(storageStructure);

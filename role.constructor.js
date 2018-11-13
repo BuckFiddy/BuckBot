@@ -14,21 +14,28 @@ module.exports = {
             creep.getEnergy(true, true, false);
         }
         else {
-            var constructionSite = creep.pos.findClosestByPath(FIND_CONSTRUCTION_SITES);
-            var damagedStructure = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: (s) => s.hits < s.hitsMax && s.structureType != STRUCTURE_WALL });
-            
-            creep.depositEnergy(true);
+            let spawn = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, {filter: (s) => (s.structureType == STRUCTURE_SPAWN) && (s.energy < s.energyCapacity)});
+            let constructionSite = creep.pos.findClosestByPath(FIND_CONSTRUCTION_SITES);
+            let damagedStructure = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: (s) => s.hits < s.hitsMax && s.structureType != STRUCTURE_WALL });
 
-            if (constructionSite) {
+            if (spawn) {
+                creep.depositEnergy(true);
+            }
+            else if (constructionSite) {
                 if(creep.build(constructionSite) == ERR_NOT_IN_RANGE) {
                     creep.moveTo(constructionSite);
                 }
-            } 
+            }
             else if (damagedStructure) {
                 if (creep.repair(damagedStructure) == ERR_NOT_IN_RANGE) {
                     creep.moveTo(damagedStructure);
                 }
-            } 
+            }
+            else {
+                if (creep.upgradeController(creep.room.controller) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(creep.room.controller);
+                }
+            }
         }
     }
 }  
