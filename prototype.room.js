@@ -2,7 +2,6 @@ Room.prototype.getAvailableMiningPositions = function (room, spawn) {
     let sources = room.find(FIND_SOURCES);
     let minerPositions = 0;
     const terrain = Game.map.getRoomTerrain(room.name);
-    sourceData = [];
 
     for (var i in sources) {
         let source = sources[i];
